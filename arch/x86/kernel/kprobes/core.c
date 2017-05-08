@@ -62,6 +62,7 @@
 #include <asm/insn.h>
 #include <asm/debugreg.h>
 #include <asm/sections.h>
+#include <asm/set_memory.h>
 
 #include "common.h"
 
