@@ -758,7 +758,7 @@ out:
 	kfree(t);
 #endif
 
-	if (!is_enforcing(state))
+	if (!enforcing_enabled(state))
 		return 0;
 	return -EPERM;
 }
@@ -1606,8 +1606,7 @@ out:
 	kfree(t);
 	kfree(n);
 #endif
-
-	if (!is_enforcing(state))
+	if (!enforcing_enabled(state))
 		return 0;
 	return -EACCES;
 }
@@ -1920,7 +1919,7 @@ static inline int convert_context_handle_invalid_context(
 	u32 len;
 #endif
 
-	if (is_enforcing(state))
+	if (enforcing_enabled(state))
 		return -EINVAL;
 
 #ifdef CONFIG_AUDIT
