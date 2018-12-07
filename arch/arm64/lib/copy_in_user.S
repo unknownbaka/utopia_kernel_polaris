@@ -7,8 +7,9 @@
 
 #include <linux/linkage.h>
 
-#include <asm/cache.h>
 #include <asm/uaccess.h>
+#include <asm/assembler.h>
+#include <asm/cache.h>
 
 /*
  * Copy from user space to user space (alignment handled by the hardware)
@@ -61,6 +62,7 @@ ENTRY(__arch_copy_in_user)
 	mov	x0, #0
 	ret
 ENDPROC(__arch_copy_in_user)
+EXPORT_SYMBOL(__arch_copy_in_user)
 
 	.section .fixup,"ax"
 	.align	2
