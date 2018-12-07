@@ -31,3 +31,4 @@ WEAK(memchr)
 2:	mov	x0, #0
 	ret
 ENDPIPROC(memchr)
+EXPORT_SYMBOL_NOKASAN(memchr)
