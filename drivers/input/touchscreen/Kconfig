@@ -287,7 +287,7 @@ config TOUCHSCREEN_CYPRESS_CYTTSP5_I2C
 	  TrueTouch(tm) Standard Product Generation5 touchscreen
 	  controller.
 
-	  If unsure, say Y.
+	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called cyttsp5_i2c.
