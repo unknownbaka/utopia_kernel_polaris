@@ -72,6 +72,10 @@ static char *kgsl_mmu_type;
 module_param_named(mmutype, kgsl_mmu_type, charp, 0000);
 MODULE_PARM_DESC(kgsl_mmu_type, "Type of MMU to be used for graphics");
 
+#define SIZE_10M 0xA00000
+static int va_feature = 3;
+module_param_named(va_feature, va_feature, int, 0644);
+
 /* Mutex used for the IOMMU sync quirk */
 DEFINE_MUTEX(kgsl_mmu_sync);
 EXPORT_SYMBOL(kgsl_mmu_sync);
@@ -4433,6 +4437,7 @@ static unsigned long _get_svm_area(struct kgsl_process_private *private,
 	uint64_t align;
 	unsigned long result;
 	unsigned long addr;
+	uint64_t svm_start, svm_end;
 
 	if (align_shift >= ilog2(SZ_2M))
 		align = SZ_2M;
@@ -4447,6 +4452,9 @@ static unsigned long _get_svm_area(struct kgsl_process_private *private,
 	if (kgsl_mmu_svm_range(private->pagetable, &start, &end,
 				entry->memdesc.flags))
 		return -ERANGE;
+
+	svm_start = start;
+	svm_end = end;
 
 	/* now clamp the range based on the CPU's requirements */
 	start = max_t(uint64_t, start, mmap_min_addr);
@@ -4485,6 +4493,24 @@ static unsigned long _get_svm_area(struct kgsl_process_private *private,
 	 * Search downwards from the hint first. If that fails we
 	 * must try to search above it.
 	 */
+	if ((va_feature & 0x2) && current->mm->va_feature) {
+		uint64_t lstart, lend;
+		unsigned long lresult;
+
+		switch (len) {
+		case 4096: case 8192: case 16384: case 32768:
+		case 65536: case 131072: case 262144:
+			lend = current->mm->va_feature_rnd - (SIZE_10M * (18 - ilog2(len)));
+			lstart = lend - SIZE_10M;
+			if (lend <= svm_end && lstart >= svm_start) {
+				lresult = _search_range(private, entry, lstart, lend, len, align);
+				if (!IS_ERR_VALUE(lresult))
+					return lresult;
+			}
+		default:
+			break;
+		}
+	}
 	result = _search_range(private, entry, start, addr, len, align);
 	if (IS_ERR_VALUE(result) && hint != 0)
 		result = _search_range(private, entry, addr, end, len, align);
@@ -4527,6 +4553,10 @@ kgsl_get_unmapped_area(struct file *file, unsigned long addr,
 	} else {
 		val = _get_svm_area(private, entry, addr, len, flags);
 		if (IS_ERR_VALUE(val)) {
+			struct vm_area_struct *vma;
+			struct mm_struct *mm = current->mm;
+			unsigned long largest_gap = UINT_MAX;
+
 			KGSL_DRV_ERR_RATELIMIT(device,
 				"_get_svm_area: pid %d[%12s] mmap_base %lx addr %lx pgoff %lx len %ld failed error %d\n",
 				pid_nr(private->pid), private->comm,
@@ -4540,6 +4570,15 @@ kgsl_get_unmapped_area(struct file *file, unsigned long addr,
 #endif
 				private->last_oom_time = ktime_add_ms(ktime_get(), (10*60*1000));
 			}
+
+			if (!RB_EMPTY_ROOT(&mm->mm_rb)) {
+				vma = rb_entry(mm->mm_rb.rb_node, struct vm_area_struct, vm_rb);
+				largest_gap = vma->rb_subtree_gap;
+			}
+
+			KGSL_DRV_ERR_RATELIMIT(device,
+					"kgsl additional info: %s VmSize %lu MaxGap %lu VA_rnd 0x%llx\n"
+					, current->group_leader->comm, mm->total_vm, largest_gap, mm->va_feature_rnd);
 		}
 	}
 
