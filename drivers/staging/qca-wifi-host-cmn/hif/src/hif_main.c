@@ -1326,7 +1326,7 @@ irqreturn_t hif_wake_interrupt_handler(int irq, void *context)
 {
 	struct hif_softc *scn = context;
 
-	HIF_INFO("wake interrupt received on irq %d", irq);
+	HIF_DBG("wake interrupt received on irq %d", irq);
 
 	if (scn->initial_wakeup_cb)
 		scn->initial_wakeup_cb(scn->initial_wakeup_priv);
