@@ -5991,7 +5991,7 @@ static void fg_battery_soc_smooth_tracking(struct fg_chip *chip)
 	if (chip->param.batt_temp > 150) {
 		/* Battery in normal temperture */
 		if (chip->param.batt_ma < 0)
-			 delta_time = time_since_last_change_sec / 30;
+			delta_time = time_since_last_change_sec / 30;
 		else {
 			calculate_average_current(chip);
 			if (chip->param.batt_ma_avg > 1000000)
