@@ -6140,60 +6140,6 @@ static int synaptics_rmi4_drm_notifier_cb(struct notifier_block *self,
 static int synaptics_rmi4_drm_notifier_cb_tddi(struct notifier_block *self,
 		unsigned long event, void *data)
 {
-#if 0
-	int *transition;
-	struct fb_event *evdata = data;
-	struct synaptics_rmi4_data *rmi4_data =
-			container_of(self, struct synaptics_rmi4_data,
-			fb_notifier);
-
-	if (mdss_prim_panel_is_dead())
-		return 0;
-
-	/* Receive notifications from primary panel only */
-	if (evdata && evdata->data && rmi4_data && mdss_panel_is_prim(evdata->info)) {
-		if (event == FB_EVENT_BLANK) {
-			transition = evdata->data;
-			if ((*transition == FB_BLANK_UNBLANK) || (*transition == FB_BLANK_NORMAL)) {
-				if (rmi4_data->wakeup_en) {
-					mdss_panel_reset_skip_enable(false);
-					mdss_regulator_ctrl(rmi4_data, DISP_REG_ALL, false);
-					rmi4_data->wakeup_en = false;
-				} else {
-					synaptics_rmi4_resume(&rmi4_data->pdev->dev);
-					rmi4_data->fb_ready = true;
-				}
-
-			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
-				if (rmi4_data->wakeup_en) {
-					synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
-					rmi4_data->fb_ready = true;
-				}
-			}
-		} else if (event == FB_EARLY_EVENT_BLANK) {
-			transition = evdata->data;
-			if (*transition == FB_BLANK_UNBLANK) {
-				if (rmi4_data->wakeup_en) {
-					synaptics_rmi4_resume(&rmi4_data->pdev->dev);
-					rmi4_data->fb_ready = true;
-					msleep(30);
-				}
-			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
-
-				if (rmi4_data->enable_wakeup_gesture) {
-					rmi4_data->wakeup_en = true;
-					mdss_panel_reset_skip_enable(true);
-					mdss_regulator_ctrl(rmi4_data, DISP_REG_ALL, true);
-				}
-
-				if (!rmi4_data->wakeup_en) {
-					synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
-					rmi4_data->fb_ready = false;
-				}
-			}
-		}
-	}
-#endif
 	return 0;
 }
 
