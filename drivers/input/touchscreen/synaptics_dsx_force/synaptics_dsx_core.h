@@ -421,8 +421,6 @@ struct synaptics_rmi4_data {
 	bool chip_is_tddi;
 	bool open_test_b7;
 	bool short_test_extend;
-	bool disable_data_dump;
-	bool dump_flags;
 	int (*reset_device)(struct synaptics_rmi4_data *rmi4_data,
 			bool rebuild);
 	int (*irq_enable)(struct synaptics_rmi4_data *rmi4_data, bool enable,
@@ -436,7 +434,6 @@ struct synaptics_rmi4_data {
 	struct pinctrl_state *pinctrl_state_suspend;
 	struct synaptics_dsx_factory_param *factory_param;
 
-	struct completion dump_completion;
 #ifdef CONFIG_TOUCH_DEBUG_FS
 	struct dentry *debugfs;
 #endif

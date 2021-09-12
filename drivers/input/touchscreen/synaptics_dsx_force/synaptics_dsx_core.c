@@ -5395,8 +5395,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	mutex_init(&(rmi4_data->rmi4_irq_enable_mutex));
 	mutex_init(&(rmi4_data->rmi4_cover_mutex));
 
-	init_completion(&rmi4_data->dump_completion);
-
 	platform_set_drvdata(pdev, rmi4_data);
 
 	vir_button_map = bdata->vir_button_map;
@@ -6113,16 +6111,10 @@ static int synaptics_rmi4_drm_notifier_cb(struct notifier_block *self,
 					rmi4_data->wakeup_en = false;
 				}
 
-				rmi4_data->disable_data_dump = false;
 			}
 		} else if (event == DRM_EARLY_EVENT_BLANK) {
 			transition = evdata->data;
 			if (*transition == DRM_BLANK_POWERDOWN) {
-				rmi4_data->disable_data_dump = true;
-				if (rmi4_data->dump_flags) {
-					reinit_completion(&rmi4_data->dump_completion);
-					wait_for_completion_timeout(&rmi4_data->dump_completion, 4 * HZ);
-				}
 
 				if (rmi4_data->enable_wakeup_gesture) {
 					rmi4_data->wakeup_en = true;
@@ -6172,7 +6164,6 @@ static int synaptics_rmi4_drm_notifier_cb_tddi(struct notifier_block *self,
 					rmi4_data->fb_ready = true;
 				}
 
-				rmi4_data->disable_data_dump = false;
 			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
 				if (rmi4_data->wakeup_en) {
 					synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
@@ -6188,11 +6179,6 @@ static int synaptics_rmi4_drm_notifier_cb_tddi(struct notifier_block *self,
 					msleep(30);
 				}
 			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
-				rmi4_data->disable_data_dump = true;
-				if (rmi4_data->dump_flags) {
-					reinit_completion(&rmi4_data->dump_completion);
-					wait_for_completion_timeout(&rmi4_data->dump_completion, 4 * HZ);
-				}
 
 				if (rmi4_data->enable_wakeup_gesture) {
 					rmi4_data->wakeup_en = true;

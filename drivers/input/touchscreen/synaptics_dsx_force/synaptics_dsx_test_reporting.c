@@ -3436,13 +3436,7 @@ static ssize_t test_sysfs_read_report_store(struct device *dev,
 	}
 
 	pr_err("%s: got report\n", __func__);
-
-	if (f54->rmi4_data->dump_flags) {
-		retval = test_sysfs_resume_touch_store(dev, attr, cmd, 1);
-		if (retval < 0)
-			goto exit;
-	} else
-		rmi4_data->reset_device(rmi4_data, false);
+	rmi4_data->reset_device(rmi4_data, false);
 
 	pr_err("%s: exiting\n", __func__);
 
@@ -8466,8 +8460,6 @@ static const struct file_operations syna_factory_ops = {
 
 static int syna_datadump_open(struct inode *inode, struct file *file)
 {
-	f54->rmi4_data->dump_flags = true;
-
 	return 0;
 }
 
@@ -8479,9 +8471,6 @@ static ssize_t syna_datadump_read(struct file *file, char __user *buf, size_t co
 
 	if (*pos != 0)
 		return 0;
-
-	if (f54->rmi4_data->disable_data_dump)
-		return -EINVAL;
 
 	data = vmalloc(PAGE_SIZE * 4);
 	if (!data)
@@ -8515,7 +8504,6 @@ static ssize_t syna_datadump_read(struct file *file, char __user *buf, size_t co
 
 	if (copy_to_user(buf, data, strlen(data))) {
 		vfree(data);
-		complete(&f54->rmi4_data->dump_completion);
 		return -EFAULT;
 	}
 
@@ -8523,7 +8511,6 @@ static ssize_t syna_datadump_read(struct file *file, char __user *buf, size_t co
 
 out:
 	vfree(data);
-	complete(&f54->rmi4_data->dump_completion);
 
 	*pos += retval;
 
@@ -8532,8 +8519,6 @@ out:
 
 static int syna_datadump_release(struct inode *inode, struct file *file)
 {
-	f54->rmi4_data->dump_flags = false;
-
 	return 0;
 }
 
