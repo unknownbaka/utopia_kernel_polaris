@@ -36,6 +36,7 @@ static u64 cfq_slice_idle = NSEC_PER_SEC / 125;
 static u64 cfq_group_idle = NSEC_PER_SEC / 125;
 static const u64 cfq_target_latency = (u64)NSEC_PER_SEC * 3/10; /* 300 ms */
 static const int cfq_hist_divisor = 4;
+static int cfq_max_async = 4;
 
 /*
  * offset from end of queue service tree for idle class
@@ -77,6 +78,10 @@ static struct kmem_cache *cfq_pool;
 #define CFQ_WEIGHT_LEGACY_MIN	10
 #define CFQ_WEIGHT_LEGACY_DFL	500
 #define CFQ_WEIGHT_LEGACY_MAX	1000
+
+/* cfq_max_async && cfq_may_dispatch */
+#define CFQ_MAY_DISPATCH_ASYNC(cfqd) \
+	((cfqd)->rq_in_flight[BLK_RW_ASYNC] < (cfqd)->cfq_max_async)
 
 struct cfq_ttime {
 	u64 last_end_request;
@@ -386,6 +391,7 @@ struct cfq_data {
 	unsigned int cfq_back_max;
 	unsigned int cfq_slice_async_rq;
 	unsigned int cfq_latency;
+	unsigned int cfq_max_async;
 	u64 cfq_fifo_expire[2];
 	u64 cfq_slice[2];
 	u64 cfq_slice_idle;
@@ -3510,7 +3516,11 @@ static bool cfq_may_dispatch(struct cfq_data *cfqd, struct cfq_queue *cfqq)
 	/*
 	 * If this is an async queue and we have sync IO in flight, let it wait
 	 */
-	if (cfqd->rq_in_flight[BLK_RW_SYNC] && !cfq_cfqq_sync(cfqq))
+	if (cfqd->rq_in_flight[BLK_RW_SYNC] && !cfq_cfqq_sync(cfqq)
+			&& !cfqd->hw_tag)
+		return false;
+
+	if (!cfq_cfqq_sync(cfqq) && !CFQ_MAY_DISPATCH_ASYNC(cfqd))
 		return false;
 
 	max_dispatch = max_t(unsigned int, cfqd->cfq_quantum / 2, 1);
@@ -3593,7 +3603,7 @@ static bool cfq_dispatch_request(struct cfq_data *cfqd, struct cfq_queue *cfqq)
 	BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list));
 
 	rq = cfq_check_fifo(cfqq);
-	if (rq)
+	if (rq && (cfq_cfqq_sync(cfqq) || CFQ_MAY_DISPATCH_ASYNC(cfqd)))
 		cfq_mark_cfqq_must_dispatch(cfqq);
 
 	if (!cfq_may_dispatch(cfqd, cfqq))
@@ -4809,6 +4819,7 @@ static int cfq_init_queue(struct request_queue *q, struct elevator_type *e)
 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
 	cfqd->cfq_slice_idle = cfq_slice_idle;
 	cfqd->cfq_group_idle = cfq_group_idle;
+	cfqd->cfq_max_async = cfq_max_async;
 	cfqd->cfq_latency = 1;
 	cfqd->hw_tag = -1;
 	/*
@@ -4875,6 +4886,7 @@ SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
 SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
 SHOW_FUNCTION(cfq_low_latency_show, cfqd->cfq_latency, 0);
 SHOW_FUNCTION(cfq_target_latency_show, cfqd->cfq_target_latency, 1);
+SHOW_FUNCTION(cfq_max_async_show, cfqd->cfq_max_async, 0);
 #undef SHOW_FUNCTION
 
 #define USEC_SHOW_FUNCTION(__FUNC, __VAR)				\
@@ -4924,6 +4936,7 @@ STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
 		UINT_MAX, 0);
 STORE_FUNCTION(cfq_low_latency_store, &cfqd->cfq_latency, 0, 1, 0);
 STORE_FUNCTION(cfq_target_latency_store, &cfqd->cfq_target_latency, 1, UINT_MAX, 1);
+STORE_FUNCTION(cfq_max_async_store, &cfqd->cfq_max_async, 1, UINT_MAX, 0);
 #undef STORE_FUNCTION
 
 #define USEC_STORE_FUNCTION(__FUNC, __PTR, MIN, MAX)			\
@@ -4967,6 +4980,7 @@ static struct elv_fs_entry cfq_attrs[] = {
 	CFQ_ATTR(low_latency),
 	CFQ_ATTR(target_latency),
 	CFQ_ATTR(target_latency_us),
+	CFQ_ATTR(max_async),
 	__ATTR_NULL
 };
 
