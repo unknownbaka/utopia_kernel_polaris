@@ -459,7 +459,7 @@ if TCP_CONG_ADVANCED
 
 config TCP_CONG_BIC
 	tristate "Binary Increase Congestion (BIC) control"
-	default m
+	default n
 	---help---
 	BIC-TCP is a sender-side only change that ensures a linear RTT
 	fairness under large windows while offering both scalability and
@@ -481,7 +481,7 @@ config TCP_CONG_CUBIC
 
 config TCP_CONG_WESTWOOD
 	tristate "TCP Westwood+"
-	default m
+	default n
 	---help---
 	TCP Westwood+ is a sender-side only modification of the TCP Reno
 	protocol stack that optimizes the performance of TCP congestion
@@ -494,8 +494,8 @@ config TCP_CONG_WESTWOOD
 	wired networks and throughput over wireless links.
 
 config TCP_CONG_HTCP
-        tristate "H-TCP"
-        default m
+	tristate "H-TCP"
+	default n
 	---help---
 	H-TCP is a send-side only modifications of the TCP Reno
 	protocol stack that optimizes the performance of TCP
@@ -534,20 +534,20 @@ config TCP_CONG_VEGAS
 	not as aggressive as TCP Reno.
 
 config TCP_CONG_NV
-       tristate "TCP NV"
-       default n
-       ---help---
-       TCP NV is a follow up to TCP Vegas. It has been modified to deal with
-       10G networks, measurement noise introduced by LRO, GRO and interrupt
-       coalescence. In addition, it will decrease its cwnd multiplicatively
-       instead of linearly.
+	tristate "TCP NV"
+	default n
+	---help---
+	TCP NV is a follow up to TCP Vegas. It has been modified to deal with
+	10G networks, measurement noise introduced by LRO, GRO and interrupt
+	coalescence. In addition, it will decrease its cwnd multiplicatively
+	instead of linearly.
 
-       Note that in general congestion avoidance (cwnd decreased when # packets
-       queued grows) cannot coexist with congestion control (cwnd decreased only
-       when there is packet loss) due to fairness issues. One scenario when they
-       can coexist safely is when the CA flows have RTTs << CC flows RTTs.
+	Note that in general congestion avoidance (cwnd decreased when # packets
+	queued grows) cannot coexist with congestion control (cwnd decreased only
+	when there is packet loss) due to fairness issues. One scenario when they
+	can coexist safely is when the CA flows have RTTs << CC flows RTTs.
 
-       For further details see http://www.brakmo.org/networking/tcp-nv/
+	For further details see http://www.brakmo.org/networking/tcp-nv/
 
 config TCP_CONG_SCALABLE
 	tristate "Scalable TCP"
