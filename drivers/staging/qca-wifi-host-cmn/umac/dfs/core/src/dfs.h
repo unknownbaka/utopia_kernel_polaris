@@ -1475,22 +1475,22 @@ int dfs_get_random_bin5_dur(struct wlan_dfs *dfs,
  * @dfs: Pointer to wlan_dfs structure.
  * @dl: Pointer to dfs_delayline structure.
  */
-void dfs_print_delayline(struct wlan_dfs *dfs,
-		struct dfs_delayline *dl);
+static inline void dfs_print_delayline(struct wlan_dfs *dfs,
+		struct dfs_delayline *dl) {}
 
 /**
  * dfs_print_nol() - Print NOL elements.
  * @dfs: Pointer to wlan_dfs structure.
  */
-void dfs_print_nol(struct wlan_dfs *dfs);
+static inline void dfs_print_nol(struct wlan_dfs *dfs) {}
 
 /**
  * dfs_print_filter() - Prints the filter.
  * @dfs: Pointer to wlan_dfs structure.
  * @rf: Pointer to dfs_filter structure.
  */
-void dfs_print_filter(struct wlan_dfs *dfs,
-		struct dfs_filter *rf);
+static inline void dfs_print_filter(struct wlan_dfs *dfs,
+		struct dfs_filter *rf) {}
 
 /**
  * dfs_getchanstate() - Get chan state.
@@ -1958,7 +1958,7 @@ void dfs_get_radars_for_ar9300(struct wlan_dfs *dfs);
  * dfs_print_filters() - Print the filters.
  * @dfs: Pointer to wlan_dfs structure.
  */
-void dfs_print_filters(struct wlan_dfs *dfs);
+static inline void dfs_print_filters(struct wlan_dfs *dfs) {}
 
 /**
  * dfs_clear_stats() - Clear stats.
