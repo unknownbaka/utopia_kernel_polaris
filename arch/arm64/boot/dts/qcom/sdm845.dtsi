@@ -481,7 +481,7 @@
 	};
 
 	chosen {
-		bootargs = "rcupdate.rcu_expedited=1";
+		bootargs = "quiet rcupdate.rcu_expedited=1 audit=0 mitigations=off ssbd=force-off kpti=0 noirqdebug nodebugmon";
 	};
 
 	soc: soc { };
@@ -502,16 +502,16 @@
 					compatible = "android,system";
 					dev = "/dev/block/platform/soc/1d84000.ufshc/by-name/system";
 					type = "ext4";
-					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,verify";
+					mnt_flags = "ro,nobarrier,discard";
+					fsmgr_flags = "wait";
 					status = "ok";
 				};
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/soc/1d84000.ufshc/by-name/vendor";
 					type = "ext4";
-					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,verify";
+					mnt_flags = "ro,nobarrier,discard";
+					fsmgr_flags = "wait";
 					status = "ok";
 				};
 			};
