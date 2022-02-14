@@ -302,6 +302,8 @@ struct cam_req_mgr_connected_device {
  * @sync_link_sof_skip   : flag determines if a pkt is not available for a given
  *                         frame in a particular link skip corresponding
  *                         frame in sync link as well.
+ * @last_flush_id        : Last request to flush
+ * @is_used              : 1 if link is in use else 0
  *
  */
 struct cam_req_mgr_core_link {
@@ -326,6 +328,8 @@ struct cam_req_mgr_core_link {
 	bool                                 frame_skip_flag;
 	bool                                 sync_link_sof_skip;
 	int64_t                              sync_trigger_frame_id;
+	uint32_t                             last_flush_id;
+	atomic_t                             is_used;
 };
 
 /**
