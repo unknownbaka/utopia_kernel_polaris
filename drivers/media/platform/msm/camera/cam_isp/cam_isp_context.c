@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
  * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1455,6 +1455,7 @@ static int __cam_isp_ctx_rdi_only_sof_in_bubble_applied(
 		notify.req_id = req->request_id;
 		notify.error = CRM_KMD_ERR_BUBBLE;
 		ctx->ctx_crm_intf->notify_err(&notify);
+		atomic_set(&ctx_isp->process_bubble, 1);
 		CAM_DBG(CAM_ISP, "Notify CRM about Bubble frame %lld",
 			ctx_isp->frame_id);
 	} else {
@@ -1508,8 +1509,20 @@ static int __cam_isp_ctx_rdi_only_sof_in_bubble_state(
 
 	ctx_isp->frame_id++;
 	ctx_isp->sof_timestamp_val = sof_event_data->timestamp;
+	atomic_inc(&ctx_isp->bubble_sof_count);
 	CAM_DBG(CAM_ISP, "frame id: %lld time stamp:0x%llx",
 		ctx_isp->frame_id, ctx_isp->sof_timestamp_val);
+
+	if (atomic_read(&ctx_isp->process_bubble) &&
+		(!list_empty(&ctx->active_req_list)) &&
+		(atomic_read(&ctx_isp->bubble_sof_count) <
+		 CAM_ISP_CTX_BUBBLE_SOF_COUNT_MAX)) {
+		CAM_INFO(CAM_ISP,
+			"Processing bubble, bubble_sof_count :%u",
+			atomic_read(&ctx_isp->bubble_sof_count));
+		goto end;
+	}
+
 	/*
 	 * Signal all active requests with error and move the  all the active
 	 * requests to free list
@@ -1529,8 +1542,11 @@ static int __cam_isp_ctx_rdi_only_sof_in_bubble_state(
 			}
 		list_add_tail(&req->list, &ctx->free_req_list);
 		ctx_isp->active_req_cnt--;
+		atomic_set(&ctx_isp->bubble_sof_count, 0);
 	}
 
+	ctx_isp->substate_activated = CAM_ISP_CTX_ACTIVATED_SOF;
+end:
 	/* notify reqmgr with sof signal */
 	if (ctx->ctx_crm_intf && ctx->ctx_crm_intf->notify_trigger) {
 		notify.link_hdl = ctx->link_hdl;
@@ -1552,8 +1568,6 @@ static int __cam_isp_ctx_rdi_only_sof_in_bubble_state(
 	 */
 	__cam_isp_ctx_send_sof_timestamp(ctx_isp, request_id,
 		CAM_REQ_MGR_SOF_EVENT_SUCCESS);
-
-	ctx_isp->substate_activated = CAM_ISP_CTX_ACTIVATED_SOF;
 
 	CAM_DBG(CAM_ISP, "next substate %d",
 		ctx_isp->substate_activated);
@@ -2205,6 +2219,7 @@ static int __cam_isp_ctx_start_dev_in_ready(struct cam_context *ctx,
 	arg.priv  = &req_isp->hw_update_data;
 
 	atomic_set(&ctx_isp->process_bubble, 0);
+	atomic_set(&ctx_isp->bubble_sof_count, 0);
 	ctx_isp->frame_id = 0;
 	ctx_isp->active_req_cnt = 0;
 	ctx_isp->reported_req_id = 0;
@@ -2303,6 +2318,7 @@ static int __cam_isp_ctx_stop_dev_in_activated_unlock(
 	ctx_isp->active_req_cnt = 0;
 	ctx_isp->reported_req_id = 0;
 	atomic_set(&ctx_isp->process_bubble, 0);
+	atomic_set(&ctx_isp->bubble_sof_count, 0);
 
 	CAM_DBG(CAM_ISP, "next state %d", ctx->state);
 	return rc;

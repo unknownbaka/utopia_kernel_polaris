@@ -111,7 +111,7 @@ kgsl_dump_memory_entry(struct kgsl_process_private *private)
 	if (!private)
 		return;
 
-	sprintf(pMemFile, "/d/kgsl/proc/%d/mem", private->pid);
+	sprintf(pMemFile, "/d/kgsl/proc/%d/mem", pid_nr(private->pid));
 	pr_info("cat %s:", pMemFile);
 
 	pr_err("%16s %16s %16s %5s %9s %10s %16s %5s %16s %6s %6s\n",
@@ -314,12 +314,12 @@ kgsl_dump_mmap(struct kgsl_process_private *private)
 	*/
 
 	char pMemFile[1024] = {0};
-	sprintf(pMemFile, "/proc/%d/maps", private->pid);
+	sprintf(pMemFile, "/proc/%d/maps", pid_nr(private->pid));
 	pr_info("cat %s:", pMemFile);
 #if 0
 	filp = filp_open(pMemFile, O_RDONLY, 0);
 	if (IS_ERR(filp)) {
-		pr_err("can NOT open /proc/%d/maps", private->pid);
+		pr_err("can NOT open /proc/%d/maps", pid_nr(private->pid));
 	} else {
 		file_size = filp->f_path.dentry->d_inode->i_size;
 		buf = (unsigned char *)kzalloc(file_size, GFP_KERNEL);

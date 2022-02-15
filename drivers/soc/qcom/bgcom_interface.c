@@ -45,7 +45,6 @@
 
 #define MPPS_DOWN_EVENT_TO_BG_TIMEOUT 3000
 #define ADSP_DOWN_EVENT_TO_BG_TIMEOUT 3000
-#define SLEEP_FOR_SPI_BUS 2000
 
 enum {
 	SSR_DOMAIN_BG,
@@ -73,6 +72,7 @@ struct bgdaemon_priv {
 	bool pending_bg_twm_wear_load;
 	struct workqueue_struct *bgdaemon_wq;
 	struct work_struct bgdaemon_load_twm_bg_work;
+	bool bg_twm_wear_load;
 };
 
 struct bg_event {
@@ -132,6 +132,7 @@ static void bgcom_load_twm_bg_work(struct work_struct *work)
 		dev->pil_h = NULL;
 		bg_soft_reset();
 	} else {
+		dev->bg_twm_wear_load = true;
 		dev->pil_h = subsystem_get_with_fwname("bg-wear",
 							"bg-twm-wear");
 		if (!dev->pil_h)
@@ -399,8 +400,6 @@ static long bg_com_ioctl(struct file *filp,
 		break;
 	case SET_SPI_BUSY:
 		ret = bgcom_set_spi_state(BGCOM_SPI_BUSY);
-		/* Add sleep for  SPI Bus to release*/
-		msleep(SLEEP_FOR_SPI_BUS);
 		break;
 	case BG_SOFT_RESET:
 		ret = bg_soft_reset();
@@ -425,7 +424,7 @@ static long bg_com_ioctl(struct file *filp,
 			ret = -EFAULT;
 			break;
 		}
-
+		dev->bg_twm_wear_load = false;
 		dev->pil_h = subsystem_get_with_fwname("bg-wear", "bg-wear");
 		if (!dev->pil_h) {
 			pr_err("failed to load bg-wear\n");
@@ -614,8 +613,6 @@ static int ssr_bg_cb(struct notifier_block *this,
 		send_uevent(&bge);
 		break;
 	case SUBSYS_AFTER_SHUTDOWN:
-		/* Add sleep for  SPI Bus to release*/
-		msleep(SLEEP_FOR_SPI_BUS);
 		if (dev->pending_bg_twm_wear_load) {
 			/* Load bg-twm-wear */
 			dev->pending_bg_twm_wear_load = false;
@@ -624,7 +621,10 @@ static int ssr_bg_cb(struct notifier_block *this,
 		}
 		break;
 	case SUBSYS_AFTER_POWERUP:
-		bge.e_type = BG_AFTER_POWER_UP;
+		if (dev->bg_twm_wear_load)
+			bge.e_type = TWM_BG_AFTER_POWER_UP;
+		else
+			bge.e_type = BG_AFTER_POWER_UP;
 		bgdaemon_ldowork(DISABLE_LDO03);
 		bgdaemon_ldowork(DISABLE_LDO09);
 		bgcom_set_spi_state(BGCOM_SPI_FREE);
