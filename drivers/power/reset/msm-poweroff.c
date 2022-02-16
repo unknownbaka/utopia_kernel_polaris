@@ -194,14 +194,12 @@ static void enable_emergency_dload_mode(void)
 
 static int dload_set(const char *val, const struct kernel_param *kp)
 {
-	pr_err("dload_set failed ! Always enable. \n");
-	return 0;
-#if 0
 	int ret;
 
 	int old_val = download_mode;
 
 	ret = param_set_int(val, kp);
+
 	if (ret)
 		return ret;
 
@@ -214,7 +212,6 @@ static int dload_set(const char *val, const struct kernel_param *kp)
 	set_dload_mode(download_mode);
 
 	return 0;
-#endif
 }
 #else
 static void set_dload_mode(int on)

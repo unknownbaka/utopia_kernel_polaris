@@ -20,24 +20,6 @@ static int xiaomi_touch_dev_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t xiaomi_touch_dev_read(struct file *file, char __user *buf,
-			   size_t count, loff_t *pos)
-{
-	return 0;
-}
-
-static ssize_t xiaomi_touch_dev_write(struct file *file,
-		const char __user *buf, size_t count, loff_t *pos)
-{
-	return 0;
-}
-
-static unsigned int xiaomi_touch_dev_poll(struct file *file,
-		poll_table *wait)
-{
-	return 0;
-}
-
 static long xiaomi_touch_dev_ioctl(struct file *file, unsigned int cmd,
 		unsigned long arg)
 {
@@ -95,20 +77,11 @@ static long xiaomi_touch_dev_ioctl(struct file *file, unsigned int cmd,
 	return ret;
 }
 
-static int xiaomi_touch_dev_release(struct inode *inode, struct file *file)
-{
-	return 0;
-}
-
 static const struct file_operations xiaomitouch_dev_fops = {
 	.owner = THIS_MODULE,
 	.open = xiaomi_touch_dev_open,
-	.read = xiaomi_touch_dev_read,
-	.write = xiaomi_touch_dev_write,
-	.poll = xiaomi_touch_dev_poll,
 	.unlocked_ioctl = xiaomi_touch_dev_ioctl,
 	.compat_ioctl = xiaomi_touch_dev_ioctl,
-	.release = xiaomi_touch_dev_release,
 	.llseek	= no_llseek,
 };
 

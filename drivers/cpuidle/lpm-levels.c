@@ -1641,9 +1641,6 @@ static void lpm_suspend_wake(void)
 	lpm_stats_suspend_exit();
 }
 
-extern void regulator_debug_print_enabled(bool only_enabled);
-extern void system_sleep_status_print_enabled(void);
-extern void gpio_debug_print(void);
 static int lpm_suspend_enter(suspend_state_t state)
 {
 	int cpu = raw_smp_processor_id();
@@ -1663,17 +1660,6 @@ static int lpm_suspend_enter(suspend_state_t state)
 	}
 	cpu_prepare(lpm_cpu, idx, false);
 	cluster_prepare(cluster, cpumask, idx, false, 0);
-
-	/*
-	 * Print the clocks which are enabled during system suspend
-	 * This debug information is useful to know which are the
-	 * clocks that are enabled and preventing the system level
-	 * LPMs(XO and Vmin).
-	 */
-	//clock_debug_print_enabled(true);
-	regulator_debug_print_enabled(true);
-	gpio_debug_print();
-	system_sleep_status_print_enabled();
 
 	success = psci_enter_sleep(lpm_cpu, idx, false);
 

@@ -366,24 +366,6 @@ static void trigger_migt(void)
 
 }
 
-static int migt_open(struct inode *inode, struct file *file)
-{
-	return 0;
-}
-
-static int migt_release(struct inode *ignored, struct file *file)
-{
-	return 0;
-}
-
-static int migt_mmap(struct file *file, struct vm_area_struct *vma)
-{
-	return 0;
-	/*remap_pfn_range(vma, vma->vm_start,
-				    page_to_pfn(virt_to_page(migt_zone)),
-				    PAGE_SIZE, PAGE_SHARED)) {*/
-}
-
 static long migt_ioctl(struct file *fp, unsigned int cmd,
 				 unsigned long arg)
 {
@@ -407,9 +389,6 @@ static long migt_ioctl(struct file *fp, unsigned int cmd,
 
 static const struct file_operations migt_fops = {
 	.owner = THIS_MODULE,
-	.open = migt_open,
-	.release = migt_release,
-	.mmap = migt_mmap,
 	.unlocked_ioctl = migt_ioctl,
 };
 

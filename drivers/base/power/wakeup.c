@@ -29,13 +29,13 @@
  * if wakeup events are registered during or immediately before the transition.
  */
 bool events_check_enabled __read_mostly;
+
 /* First wakeup IRQ seen by the kernel in the last cycle. */
 unsigned int pm_wakeup_irq __read_mostly;
-extern void system_sleep_status_print_enabled(void);
 
 /* If set and the system is suspending, terminate the suspend. */
 static bool pm_abort_suspend __read_mostly;
-static struct	delayed_work	wakelock_work;
+
 /*
  * Combined counters of registered wakeup events and wakeup events in progress.
  * They need to be modified together atomically, so it's better to use one
@@ -848,7 +848,6 @@ EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
  * since the old value was stored.  Also return true if the current number of
  * wakeup events being processed is different from zero.
  */
-bool wakeup_irq_abort_suspend;
 bool pm_wakeup_pending(void)
 {
 	unsigned long flags;
@@ -872,18 +871,20 @@ bool pm_wakeup_pending(void)
 	return ret || pm_abort_suspend;
 }
 
+bool wakeup_irq_abort_suspend;
+
 void pm_system_wakeup(void)
 {
+	bool wakeup_irq_abort_suspend = true;
 	pm_abort_suspend = true;
-	wakeup_irq_abort_suspend = true;
 	freeze_wake();
 }
 EXPORT_SYMBOL_GPL(pm_system_wakeup);
 
 void pm_wakeup_clear(void)
 {
+	bool wakeup_irq_abort_suspend = false;
 	pm_abort_suspend = false;
-	wakeup_irq_abort_suspend = false;
 	pm_wakeup_irq = 0;
 }
 
@@ -1107,16 +1108,6 @@ static int wakeup_sources_stats_seq_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-void print_active_wakelock(struct work_struct *work)
-
-{
-
-	pm_print_active_wakeup_sources();
-	system_sleep_status_print_enabled();
-	schedule_delayed_work(&wakelock_work, 6000);
-
-}
-
 static const struct seq_operations wakeup_sources_stats_seq_ops = {
 	.start = wakeup_sources_stats_seq_start,
 	.next  = wakeup_sources_stats_seq_next,
@@ -1141,8 +1132,6 @@ static int __init wakeup_sources_debugfs_init(void)
 {
 	wakeup_sources_stats_dentry = debugfs_create_file("wakeup_sources",
 			S_IRUGO, NULL, NULL, &wakeup_sources_stats_fops);
-	INIT_DELAYED_WORK(&wakelock_work, print_active_wakelock);
-	schedule_delayed_work(&wakelock_work, 1);
 	return 0;
 }
 

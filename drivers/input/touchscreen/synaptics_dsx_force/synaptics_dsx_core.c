@@ -5594,7 +5594,7 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 
 	device_init_wakeup(&pdev->dev, 1);
 	update_hardware_info(TYPE_TOUCH, 1); /* Synaptics */
-
+	update_hardware_info(TYPE_TP_MAKER, rmi4_data->lockdown_info[0] - 0x30);
 	synaptics_secure_touch_init(rmi4_data);
 	synaptics_secure_touch_stop(rmi4_data, 1);
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
@@ -5603,8 +5603,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	rmi4_data->palm_tx_grip_disable = bdata->palm_tx_disable;
 	rmi4_data->palm_rx_area_threshold = bdata->palm_rx_area;
 	rmi4_data->palm_rx_channel_threshold = bdata->palm_rx_channel;
-	dev_info(&pdev->dev, "%s load palm sensor dts param:tx_disable:%d, rx_area:%d, rx_channel:%d\n", __func__,
-		rmi4_data->palm_tx_grip_disable, rmi4_data->palm_rx_area_threshold, rmi4_data->palm_rx_channel_threshold);
 	memset(&xiaomi_touch_interfaces, 0x00, sizeof(struct xiaomi_touch_interface));
 	xiaomi_touch_interfaces.palm_sensor_write = synaptics_rmi4_palmsensor_enable;
 	xiaomitouch_register_modedata(&xiaomi_touch_interfaces);

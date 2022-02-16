@@ -292,51 +292,6 @@ fail:
 	return ret;
 }
 
-void system_sleep_status_print_enabled(void)
-{
-	int i,m,n;
-	u32 sleep_type, sleep_count;
-	char type[5];
-	u32 subsystem_name, subsystem_status, subsystem_count;
-	void __iomem *reg_subsystem;
-	char *type_name[2] = {"AOSD","CXSD"};
-
-	if (likely(!debug_sleepstats))
-		return;
-
-	if (!reg_base) {
-		pr_err("%s: ERROR reg_base is NULL\n", __func__);
-		return;
-	}
-
-	pr_info("Sleep stats:\n");
-	for (i = 0; i < RPM_STATS_NUM_REC; i++) {
-		sleep_type = msm_rpmstats_read_long_register(reg_base, i,
-				offsetof(struct msm_rpm_stats_data, stat_type));
-		sleep_count = msm_rpmstats_read_long_register(reg_base, i,
-				offsetof(struct msm_rpm_stats_data, count));
-		type[4] = 0;
-		memcpy(type, &sleep_type, sizeof(u32));
-		pr_info("RPM Mode:%s Count:%d\n", type, sleep_count);
-	}
-
-	reg_subsystem = reg_base + subsystem_reg_offset;
-	for (m = 0; m < 2; m++) {
-		pr_info("Subsystem %s:\n", type_name[m]);
-		for (n = 0; n < SUBSYSTEM_STATS_NUM_REC; n++) {
-			subsystem_name = msm_subsystem_stats_read_long_register(reg_subsystem, n + m*SUBSYSTEM_STATS_NUM_REC,
-					offsetof(struct msm_rpm_subsystem_stats_data, subsystem_name));
-			subsystem_status = msm_subsystem_stats_read_long_register(reg_subsystem, n + m*SUBSYSTEM_STATS_NUM_REC,
-					offsetof(struct msm_rpm_subsystem_stats_data, status));
-			subsystem_count = msm_subsystem_stats_read_long_register(reg_subsystem, n + m*SUBSYSTEM_STATS_NUM_REC,
-					offsetof(struct msm_rpm_subsystem_stats_data, count));
-			type[4] = 0;
-			memcpy(type, &subsystem_name, sizeof(u32));
-			pr_info("%s status:%d count:%d\n", type, subsystem_status, subsystem_count);
-		}
-	}
-}
-
 static int msm_rpmstats_probe(struct platform_device *pdev)
 {
 	struct msm_rpmstats_platform_data *pdata;

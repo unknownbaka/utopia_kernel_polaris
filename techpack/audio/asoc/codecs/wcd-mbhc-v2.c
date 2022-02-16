@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-#define DEBUG
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/slab.h>
@@ -1517,14 +1516,6 @@ static int wcd_mbhc_usb_c_analog_setup_gpios(struct wcd_mbhc *mbhc,
 			msm_cdc_pinctrl_select_sleep_state(config->euro_us_hw_switch_gpio_p);
 			pr_info("hardware auto switch disable\n");
 		}
-#ifdef CONFIG_AUDIO_UART_DEBUG
-		if (get_hw_version_platform() == HARDWARE_PLATFORM_POLARIS) {
-			if (get_hw_version_major() == 0)
-				msm_cdc_pinctrl_select_sleep_state(config->uart_audio_switch_gpio_p);
-			else
-				msm_cdc_pinctrl_select_active_state(config->uart_audio_switch_gpio_p);
-		}
-#endif
 
 		mbhc->mbhc_cfg->enable_dual_adc_gpio(mbhc->mbhc_cfg->dual_adc_gpio_node, 1);
 
