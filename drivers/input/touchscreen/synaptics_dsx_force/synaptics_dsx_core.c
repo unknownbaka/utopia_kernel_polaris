@@ -5594,7 +5594,7 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 
 	device_init_wakeup(&pdev->dev, 1);
 	update_hardware_info(TYPE_TOUCH, 1); /* Synaptics */
-	update_hardware_info(TYPE_TP_MAKER, rmi4_data->lockdown_info[0] - 0x30);
+	update_hardware_info(TYPE_TP_MAKER, 2); /*Lens*/
 	synaptics_secure_touch_init(rmi4_data);
 	synaptics_secure_touch_stop(rmi4_data, 1);
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
