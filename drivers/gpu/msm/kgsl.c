@@ -4494,8 +4494,10 @@ kgsl_get_unmapped_area(struct file *file, unsigned long addr,
 				pgoff, len, (int) val);
 
 			if (ktime_after(ktime_get(), private->last_oom_time)) {
+#ifdef CONFIG_KGSL_DUMP
 				kgsl_dump_mmap(private);
 				kgsl_dump_memory_entry(private);
+#endif
 				private->last_oom_time = ktime_add_ms(ktime_get(), (10*60*1000));
 			}
 		}
