@@ -1,0 +1,26 @@
+kind: pipeline
+name: Baka-CI-Build-Project
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  depth: 1
+
+steps:
+- name: Baka-CI-Build-Project
+  image: ubuntu:latest
+  environment:
+    TELEGRAM_BOT:
+        from_secret: TELEGRAM_BOT
+    TELEGRAM_GROUP:
+        from_secret: TELEGRAM_GROUP
+  commands:
+    - echo 'Asia/Shanghai' > /etc/timezone
+    - apt-get update -qq && apt-get upgrade -y && apt-get install --no-install-recommends -y ca-certificates curl git tar unzip wget zip zstd
+    - export CODENAME="polaris"
+    - export KERNEL_DEVICE="Xiaomi Mix 2s"
+    - export KERNEL_ANDROID_VER="Q"
+    - export KERNEL_NAME="Utopia"
+    - bash -c "$(curl -fsSL https://github.com/unknownbaka/CI/raw/build/build/build_kernel.sh)"
