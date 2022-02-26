@@ -2252,65 +2252,6 @@ static void qpnp_pon_debugfs_remove(struct platform_device *pdev)
 {}
 #endif
 
-static int debug_pon_on_off_reg(struct qpnp_pon *pon)
-{
-	int rc = 0;
-	uint pon_sts = 0;
-	int i = 0;
-	char str_buf[256] = "";
-	char reg[16] = "";
-
-	for (i = QPNP_PON_REASON1(pon); i <= QPNP_S3_RESET_REASON(pon) + 1; i++) {
-		rc = regmap_read(pon->regmap, i, &pon_sts);
-		if (rc) {
-			dev_err(&pon->pdev->dev,
-					"Unable to read PON_RESASON1 reg rc: %d\n",
-					rc);
-			return rc;
-		}
-		snprintf(reg, sizeof(reg), "0x%x:0x%x ", i, pon_sts);
-		strlcat(str_buf, reg, sizeof(str_buf));
-	}
-
-	if (to_spmi_device(pon->pdev->dev.parent)->usid)
-		goto print_log;
-
-	rc = regmap_read(pon->regmap, QPNP_PON_KPDPWR_S2_CNTL(pon), &pon_sts);
-	if (rc) {
-		dev_err(&pon->pdev->dev,
-				"Unable to read PON_RESASON1 reg rc: %d\n",
-				rc);
-		return rc;
-	}
-	snprintf(reg, sizeof(reg), "0x%x:0x%x ", QPNP_PON_KPDPWR_S2_CNTL(pon), pon_sts);
-	strlcat(str_buf, reg, sizeof(str_buf));
-
-	rc = regmap_read(pon->regmap, QPNP_PON_KPDPWR_RESIN_S2_CNTL(pon), &pon_sts);
-	if (rc) {
-		dev_err(&pon->pdev->dev,
-				"Unable to read PON_RESASON1 reg rc: %d\n",
-				rc);
-		return rc;
-	}
-	snprintf(reg, sizeof(reg), "0x%x:0x%x ", QPNP_PON_KPDPWR_RESIN_S2_CNTL(pon), pon_sts);
-	strlcat(str_buf, reg, sizeof(str_buf));
-
-	rc = regmap_read(pon->regmap, QPNP_PON_PS_HOLD_RST_CTL(pon), &pon_sts);
-	if (rc) {
-		dev_err(&pon->pdev->dev,
-				"Unable to read PON_RESASON1 reg rc: %d\n",
-				rc);
-		return rc;
-	}
-	snprintf(reg, sizeof(reg), "0x%x:0x%x ", QPNP_PON_PS_HOLD_RST_CTL(pon), pon_sts);
-	strlcat(str_buf, reg, sizeof(str_buf));
-
-print_log:
-	strlcat(str_buf, "\n", sizeof(str_buf));
-	printk(str_buf);
-
-	return rc;
-}
 static int read_gen2_pon_off_reason(struct qpnp_pon *pon, u16 *reason,
 					int *reason_index_offset)
 {
@@ -2868,7 +2809,6 @@ static int qpnp_pon_probe(struct platform_device *pdev)
 	pon->legacy_hard_reset_offset = of_property_read_bool(pdev->dev.of_node,
 					"qcom,use-legacy-hard-reset-offset");
 
-	debug_pon_on_off_reg(pon);
 	qpnp_pon_debugfs_init(pdev);
 	return 0;
 
