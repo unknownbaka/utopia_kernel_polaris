@@ -120,16 +120,6 @@
 #define PMIC_GPIO_CONF_ATEST			(PIN_CONFIG_END + 3)
 #define PMIC_GPIO_CONF_DTEST_BUFFER		(PIN_CONFIG_END + 4)
 
-#define spmi_gpio_debug_output(m, c, fmt, ...)		\
-do {							\
-	if (m)						\
-		seq_printf(m, fmt, ##__VA_ARGS__);	\
-	else if (c)					\
-		pr_cont(fmt, ##__VA_ARGS__);		\
-	else						\
-		pr_info(fmt, ##__VA_ARGS__);		\
-} while (0)
-
 /* The index of each function in pmic_gpio_functions[] array */
 enum pmic_gpio_func_index {
 	PMIC_GPIO_FUNC_INDEX_NORMAL	= 0x00,
@@ -680,12 +670,12 @@ static void pmic_gpio_config_dbg_show(struct pinctrl_dev *pctldev,
 
 	pad = pctldev->desc->pins[pin].drv_data;
 
-	spmi_gpio_debug_output(s, 1, " gpio%-2d:", pad->gpio_idx);
+	seq_printf(s, " gpio%-2d:", pad->gpio_idx);
 
 	val = pmic_gpio_read(state, pad, PMIC_GPIO_REG_EN_CTL);
 
 	if (val < 0 || !(val >> PMIC_GPIO_REG_MASTER_EN_SHIFT)) {
-		spmi_gpio_debug_output(s, 1, " ---");
+		seq_puts(s, " ---");
 	} else {
 
 		if (pad->input_enabled) {
@@ -709,15 +699,15 @@ static void pmic_gpio_config_dbg_show(struct pinctrl_dev *pctldev,
 			function = pad->function;
 		}
 
-		spmi_gpio_debug_output(s, 1, " %-4s", pad->output_enabled ? "out" : "in");
-		spmi_gpio_debug_output(s, 1, " %-7s", pmic_gpio_functions[function]);
-		spmi_gpio_debug_output(s, 1, " vin-%d", pad->power_source);
-		spmi_gpio_debug_output(s, 1, " %-27s", biases[pad->pullup]);
-		spmi_gpio_debug_output(s, 1, " %-10s", buffer_types[pad->buffer_type]);
-		spmi_gpio_debug_output(s, 1, " %-4s", pad->out_value ? "high" : "low");
-		spmi_gpio_debug_output(s, 1, " %-7s", strengths[pad->strength]);
+		seq_printf(s, " %-4s", pad->output_enabled ? "out" : "in");
+		seq_printf(s, " %-7s", pmic_gpio_functions[function]);
+		seq_printf(s, " vin-%d", pad->power_source);
+		seq_printf(s, " %-27s", biases[pad->pullup]);
+		seq_printf(s, " %-10s", buffer_types[pad->buffer_type]);
+		seq_printf(s, " %-4s", pad->out_value ? "high" : "low");
+		seq_printf(s, " %-7s", strengths[pad->strength]);
 		if (pad->dtest_buffer != INT_MAX)
-			spmi_gpio_debug_output(s, 1, " dtest buffer %d", pad->dtest_buffer);
+			seq_printf(s, " dtest buffer %d", pad->dtest_buffer);
 	}
 }
 
@@ -827,7 +817,7 @@ static void pmic_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
 
 	for (i = 0; i < chip->ngpio; i++) {
 		pmic_gpio_config_dbg_show(state->ctrl, s, i);
-		spmi_gpio_debug_output(s, 1, "\n");
+		seq_puts(s, "\n");
 	}
 }
 
