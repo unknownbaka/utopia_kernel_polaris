@@ -371,7 +371,6 @@ TRACE_EVENT(scsi_softirq_done,
 	TP_printk("tag = %u", __entry->tag
 	)
 );
-
 #endif /*  _TRACE_SCSI_H */
 
 /* This part must be outside protection */
