@@ -875,16 +875,16 @@ bool wakeup_irq_abort_suspend;
 
 void pm_system_wakeup(void)
 {
-	bool wakeup_irq_abort_suspend = true;
 	pm_abort_suspend = true;
+	wakeup_irq_abort_suspend = true;
 	freeze_wake();
 }
 EXPORT_SYMBOL_GPL(pm_system_wakeup);
 
 void pm_wakeup_clear(void)
 {
-	bool wakeup_irq_abort_suspend = false;
 	pm_abort_suspend = false;
+	wakeup_irq_abort_suspend = false;
 	pm_wakeup_irq = 0;
 }
 
