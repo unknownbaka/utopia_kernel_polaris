@@ -116,20 +116,24 @@ static os_timer_func(dfs_nol_timeout)
 static void dfs_nol_elem_free_work_cb(void *context)
 {
 	struct wlan_dfs *dfs = (struct wlan_dfs *)context;
-	struct dfs_nolelem *tmp_nol_entry, *nol_entry;
+	struct dfs_nolelem *nol_head;
 
-	WLAN_DFSNOL_LOCK(dfs);
-	if (!TAILQ_EMPTY(&dfs->dfs_nol_free_list))
-		TAILQ_FOREACH_SAFE(nol_entry,
-				&dfs->dfs_nol_free_list,
-				nolelem_list,
-				tmp_nol_entry) {
-			TAILQ_REMOVE(&dfs->dfs_nol_free_list,
-					nol_entry, nolelem_list);
-			qdf_timer_free(&nol_entry->nol_timer);
-			qdf_mem_free(nol_entry);
+	while (true) {
+		WLAN_DFSNOL_LOCK(dfs);
+
+		nol_head = TAILQ_FIRST(&dfs->dfs_nol_free_list);
+		if (nol_head) {
+			TAILQ_REMOVE(&dfs->dfs_nol_free_list, nol_head,
+				     nolelem_list);
+			WLAN_DFSNOL_UNLOCK(dfs);
+
+			qdf_timer_free(&nol_head->nol_timer);
+			qdf_mem_free(nol_head);
+		} else {
+			WLAN_DFSNOL_UNLOCK(dfs);
+			break;
 		}
-	WLAN_DFSNOL_UNLOCK(dfs);
+	}
 }
 
 void dfs_nol_timer_init(struct wlan_dfs *dfs)
@@ -256,6 +260,36 @@ static os_timer_func(dfs_remove_from_nol)
 	 * contains the timer Object.
 	 */
 	qdf_sched_work(NULL, &dfs->dfs_nol_elem_free_work);
+}
+
+void dfs_print_nol(struct wlan_dfs *dfs)
+{
+	struct dfs_nolelem *nol;
+#ifdef WLAN_DEBUG
+	int i = 0;
+#endif
+	uint32_t diff_ms, remaining_sec;
+
+	if (!dfs) {
+		dfs_err(dfs, WLAN_DEBUG_DFS_ALWAYS,  "dfs is NULL");
+		return;
+	}
+
+	nol = dfs->dfs_nol;
+	dfs_debug(dfs, WLAN_DEBUG_DFS_NOL, "NOL");
+	while (nol != NULL) {
+		diff_ms = qdf_system_ticks_to_msecs(qdf_system_ticks() -
+				nol->nol_start_ticks);
+		diff_ms = (nol->nol_timeout_ms - diff_ms);
+		remaining_sec = diff_ms / 1000; /* Convert to seconds */
+		dfs_info(NULL, WLAN_DEBUG_DFS_ALWAYS,
+			"nol:%d channel=%d MHz width=%d MHz time left=%u seconds nol starttick=%llu",
+			i++, nol->nol_freq,
+			nol->nol_chwidth,
+			remaining_sec,
+			(uint64_t)nol->nol_start_ticks);
+		nol = nol->nol_next;
+	}
 }
 
 void dfs_print_nolhistory(struct wlan_dfs *dfs)
@@ -512,23 +546,22 @@ void dfs_nol_timer_cleanup(struct wlan_dfs *dfs)
 {
 	struct dfs_nolelem *nol;
 
-	WLAN_DFSNOL_LOCK(dfs);
-	nol = dfs->dfs_nol;
-	while (nol) {
-		dfs->dfs_nol = nol->nol_next;
-		dfs->dfs_nol_count--;
-		/*
-		 * Unlock is required so that when we sync with the
-		 * nol_timeout timer we do not run into deadlock.
-		 */
-		WLAN_DFSNOL_UNLOCK(dfs);
-		qdf_timer_free(&nol->nol_timer);
+	while (true) {
 		WLAN_DFSNOL_LOCK(dfs);
 
-		qdf_mem_free(nol);
 		nol = dfs->dfs_nol;
+		if (nol) {
+			dfs->dfs_nol = nol->nol_next;
+			dfs->dfs_nol_count--;
+			WLAN_DFSNOL_UNLOCK(dfs);
+
+			qdf_timer_free(&nol->nol_timer);
+			qdf_mem_free(nol);
+		} else {
+			WLAN_DFSNOL_UNLOCK(dfs);
+			break;
+		}
 	}
-	WLAN_DFSNOL_UNLOCK(dfs);
 }
 
 void dfs_nol_workqueue_cleanup(struct wlan_dfs *dfs)
