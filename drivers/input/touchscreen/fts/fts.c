@@ -1919,7 +1919,6 @@ static unsigned char *fts_gesture_event_handler(struct fts_ts_info *info, unsign
 {
 	unsigned char touchId;
 	int value;
-	char ch[64] = {0x0,};
 
 	if (!info->gesture_enabled)
 		return fts_next_event(event);
