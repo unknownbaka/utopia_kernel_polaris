@@ -3207,7 +3207,8 @@ static void walt_update_coloc_boost_load(void)
 	struct related_thread_group *grp;
 	struct sched_cluster *cluster;
 
-	if (!sysctl_sched_little_cluster_coloc_fmin_khz)
+	if (!sysctl_sched_little_cluster_coloc_fmin_khz ||
+			sysctl_sched_boost == CONSERVATIVE_BOOST)
 		return;
 
 	grp = lookup_related_thread_group(DEFAULT_CGROUP_COLOC_ID);
