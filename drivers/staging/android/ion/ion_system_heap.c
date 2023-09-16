@@ -31,8 +31,6 @@
 #include <trace/events/kmem.h>
 #include <soc/qcom/secure_buffer.h>
 
-static unsigned long cam_mem_reserved = SZ_256M;
-
 static gfp_t high_order_gfp_flags = (GFP_HIGHUSER | __GFP_NOWARN |
 				     __GFP_NORETRY) & ~__GFP_RECLAIM;
 static gfp_t low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_NOWARN);
@@ -40,14 +38,11 @@ static gfp_t low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_NOWARN);
 #ifndef CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS
 #if defined(CONFIG_IOMMU_IO_PGTABLE_ARMV7S)
 static const unsigned int orders[] = {8, 4, 0};
-static const unsigned int cam_reserved_counts[] = {800, 1500, 2700};
 #else
-static const unsigned int orders[] = {8, 4, 0};
-static const unsigned int cam_reserved_counts[] = {870, 1500, 2720};
+static const unsigned int orders[] = {9, 4, 0};
 #endif
 #else
 static const unsigned int orders[] = {0};
-static const unsigned int cam_reserved_counts[] = {0};
 #endif
 
 static const int num_orders = ARRAY_SIZE(orders);
@@ -70,7 +65,6 @@ struct ion_system_heap {
 	struct ion_heap heap;
 	struct ion_page_pool **uncached_pools;
 	struct ion_page_pool **cached_pools;
-	struct ion_page_pool **cam_pools;
 	struct ion_page_pool **secure_pools[VMID_LAST];
 	/* Prevents unnecessary page splitting */
 	struct mutex split_page_mutex;
@@ -127,9 +121,7 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 	struct device *dev = heap->heap.priv;
 
 	if (*from_pool) {
-		if (buffer->flags & ION_FLAG_CAM_ALLOC)
-			pool = heap->cam_pools[order_to_index(order)];
-		else if (vmid > 0)
+		if (vmid > 0)
 			pool = heap->secure_pools[vmid][order_to_index(order)];
 		else if (!cached)
 			pool = heap->uncached_pools[order_to_index(order)];
@@ -168,9 +160,7 @@ static void free_buffer_page(struct ion_system_heap *heap,
 	if (!(buffer->flags & ION_FLAG_POOL_FORCE_ALLOC)) {
 		struct ion_page_pool *pool;
 
-		if (buffer->flags & ION_FLAG_CAM_ALLOC)
-			pool = heap->cam_pools[order_to_index(order)];
-		else if (vmid > 0)
+		if (vmid > 0)
 			pool = heap->secure_pools[vmid][order_to_index(order)];
 		else if (cached)
 			pool = heap->cached_pools[order_to_index(order)];
@@ -652,23 +642,12 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
 	int nr_total = 0;
 	int i, j, nr_freed = 0;
 	int only_scan = 0;
-	unsigned long cam_total = 0;
-	unsigned long reserved = 0;
-	int count = 0;
 	struct ion_page_pool *pool;
 
 	sys_heap = container_of(heap, struct ion_system_heap, heap);
 
 	if (!nr_to_scan)
 		only_scan = 1;
-
-	for (i = 0; i < num_orders; i++) {
-		pool = sys_heap->cam_pools[i];
-		cam_total += (1 << pool->order) * PAGE_SIZE *
-			pool->high_count;
-		cam_total += (1 << pool->order) * PAGE_SIZE *
-			pool->low_count;
-	}
 
 	for (i = 0; i < num_orders; i++) {
 		nr_freed = 0;
@@ -690,32 +669,8 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
 			nr_to_scan -= nr_freed;
 			/* shrink completed */
 			if (nr_to_scan <= 0)
-				return nr_total;
-		}
-	}
-
-	if (totalram_pages  > 4 * (SZ_1G >> PAGE_SHIFT))
-		reserved = 2 * cam_mem_reserved;
-	else
-		reserved = cam_mem_reserved;
-
-	if (cam_total < reserved)
-		return nr_total;
-
-	for (i = num_orders - 1; i >= 0; i--) {
-		nr_freed = 0;
-
-		pool = sys_heap->cam_pools[i];
-		nr_freed += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
-		nr_total += nr_freed;
-		if (!only_scan) {
-			nr_to_scan -= nr_freed;
-			if (nr_to_scan <= 0)
 				break;
 		}
-		count = pool->high_count + pool->low_count;
-		if (count > cam_reserved_counts[i])
-			break;
 	}
 
 	return nr_total;
@@ -799,10 +754,6 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	if (!heap->cached_pools)
 		goto err_alloc_cached_pools;
 
-	heap->cam_pools = kzalloc(pools_size, GFP_KERNEL);
-	if (!heap->cam_pools)
-		goto err_alloc_cam_pools;
-
 	for (i = 0; i < VMID_LAST; i++) {
 		if (is_secure_vmid_valid(i)) {
 			heap->secure_pools[i] = kzalloc(pools_size, GFP_KERNEL);
@@ -820,22 +771,14 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	if (ion_system_heap_create_pools(dev, heap->cached_pools, true))
 		goto err_create_cached_pools;
 
-	if (ion_system_heap_create_pools(dev, heap->cam_pools, false))
-		goto err_create_cam_pools;
-
-	for (i = 0; i < num_orders; i++)
-		ion_page_pool_prealloc(heap->cam_pools[i], cam_reserved_counts[i]);
-
 	mutex_init(&heap->split_page_mutex);
 
 	return &heap->heap;
 
-err_create_cam_pools:
-	ion_system_heap_destroy_pools(heap->cached_pools);
 err_create_cached_pools:
 	ion_system_heap_destroy_pools(heap->uncached_pools);
 err_create_uncached_pools:
-	kfree(heap->cam_pools);
+	kfree(heap->cached_pools);
 err_create_secure_pools:
 	for (i = 0; i < VMID_LAST; i++) {
 		if (heap->secure_pools[i]) {
@@ -843,8 +786,6 @@ err_create_secure_pools:
 			kfree(heap->secure_pools[i]);
 		}
 	}
-err_alloc_cam_pools:
-	kfree(heap->cached_pools);
 err_alloc_cached_pools:
 	kfree(heap->uncached_pools);
 err_alloc_uncached_pools:
@@ -871,10 +812,8 @@ void ion_system_heap_destroy(struct ion_heap *heap)
 	}
 	ion_system_heap_destroy_pools(sys_heap->uncached_pools);
 	ion_system_heap_destroy_pools(sys_heap->cached_pools);
-	ion_system_heap_destroy_pools(sys_heap->cam_pools);
 	kfree(sys_heap->uncached_pools);
 	kfree(sys_heap->cached_pools);
-	kfree(sys_heap->cam_pools);
 	kfree(sys_heap);
 	kmem_cache_destroy(ion_page_info_pool);
 }
