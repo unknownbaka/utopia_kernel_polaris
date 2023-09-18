@@ -51,7 +51,7 @@ static struct smb_params v1_params = {
 		.name	= "usb input current limit",
 		.reg	= USBIN_CURRENT_LIMIT_CFG_REG,
 		.min_u	= 0,
-		.max_u	= 3000000,
+		.max_u	= 5000000,
 		.step_u	= 25000,
 	},
 	.icl_stat		= {
