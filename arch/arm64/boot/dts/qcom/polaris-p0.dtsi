@@ -303,7 +303,6 @@
 		qcom,batt-id-range-pct = <15>;
 		#include "batterydata-d5-atl-3400mAh.dtsi"
 		#include "batterydata-d5-cos-3400mAh.dtsi"
-		#include "batterydata-itech-3020mAh.dtsi"
 	};
 
 	extcon_usb1: extcon_usb1 {
