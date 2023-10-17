@@ -2,7 +2,7 @@
 qcom,d5_atl_3400mah {
 	/* #2957455_Xiaomi_D5scud_3400mAh_averaged_MasterSlave_Jun6th2017*/
 	qcom,max-voltage-uv = <4400000>;
-	qcom,fastchg-current-ma = <3300>;
+	qcom,fastchg-current-ma = <5300>;
 	qcom,nom-batt-capacity-mah = <3400>;
 	qcom,fg-cc-cv-threshold-mv = <4390>;
 	qcom,batt-id-kohm = <68>;
