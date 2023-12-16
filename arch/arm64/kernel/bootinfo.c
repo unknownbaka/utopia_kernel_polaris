@@ -163,7 +163,7 @@ static ssize_t powerup_reason_show(struct kobject *kobj,
 			__func__, pu_reason, pu_reason_index);
 		goto out;
 	}
-	s += snprintf(s, 15, "unknown reboot\n");
+	s += snprintf(s, 16, "unknown reboot\n");
 out:
 	return (s - buf);
 }
@@ -200,7 +200,7 @@ static ssize_t poweroff_reason_show(struct kobject *kobj,
 	int v = pmic_v[0];
 
 	if (v == -1)
-		return snprintf(buf, 10, " unknown \n");
+		return snprintf(buf, 11, " unknown \n");
 
 	while ((i < PMIC_NUM) && (pmic_v[i] != -1)) {
 		v = pmic_v[i];
