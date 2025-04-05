@@ -1483,3 +1483,6 @@ config BERYLLIUM
 	default n
 	help
 	 specific this is e10 kernel, and decrease dtb size.
+
+config ARCH_HAS_SET_MEMORY
+	def_bool y
