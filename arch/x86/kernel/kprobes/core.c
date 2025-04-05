@@ -55,6 +55,7 @@
 
 #include <asm/text-patching.h>
 #include <asm/cacheflush.h>
+#include <linux/set_memory.h>
 #include <asm/desc.h>
 #include <asm/pgtable.h>
 #include <asm/uaccess.h>

@@ -18,6 +18,7 @@
 #include <net/sch_generic.h>
 
 #include <asm/cacheflush.h>
+#include <linux/set_memory.h>
 
 #include <uapi/linux/filter.h>
 #include <uapi/linux/bpf.h>

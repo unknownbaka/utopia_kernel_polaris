@@ -3,6 +3,7 @@
 #include <linux/memblock.h>
 
 #include <asm/cacheflush.h>
+#include <linux/set_memory.h>
 #include <asm/pgtable.h>
 #include <asm/realmode.h>
 #include <asm/tlbflush.h>
