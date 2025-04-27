@@ -1,4 +1,4 @@
-ccflags-y += -Ofast
+ccflags-y += -O3 -ffast-math
 
 obj-$(CONFIG_PM_DEVFREQ)	+= devfreq.o
 obj-$(CONFIG_PM_DEVFREQ_EVENT)	+= devfreq-event.o
