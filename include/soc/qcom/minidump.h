@@ -37,7 +37,8 @@ extern bool minidump_enabled;
 #else
 static inline int msm_minidump_add_region(const struct md_region *entry)
 {
-	return -ENODEV;
+	/* Return quietly, if minidump is not supported */
+	return 0;
 }
 static inline bool msm_minidump_enabled(void) { return false; }
 #endif
