@@ -10252,27 +10252,27 @@ static struct health_attr ufs_health_##_name = {			\
 
 HEALTH_ATTR_RO(length, UFSHCD_HEALTH_LEN_OFFSET, 1);
 HEALTH_ATTR_RO(type, UFSHCD_HEALTH_TYPE_OFFSET, 1);
-HEALTH_ATTR_RO(eol, UFSHCD_HEALTH_EOL_OFFSET, 1);
-HEALTH_ATTR_RO(lifetimeA, UFSHCD_HEALTH_LIFEA_OFFSET, 1);
-HEALTH_ATTR_RO(lifetimeB, UFSHCD_HEALTH_LIFEB_OFFSET, 1);
-HEALTH_ATTR_RO(lifetimeC, UFSHCD_HEALTH_LIFEC_OFFSET, 1);
+HEALTH_ATTR_RO(eol_info, UFSHCD_HEALTH_EOL_OFFSET, 1);
+HEALTH_ATTR_RO(life_time_estimation_a, UFSHCD_HEALTH_LIFEA_OFFSET, 1);
+HEALTH_ATTR_RO(life_time_estimation_b, UFSHCD_HEALTH_LIFEB_OFFSET, 1);
+HEALTH_ATTR_RO(life_time_estimation_c, UFSHCD_HEALTH_LIFEC_OFFSET, 1);
 HEALTH_ATTR_RO(erasecount, UFSHCD_HEALTH_ERASE_OFFSET, 2);
 HEALTH_ATTR_RO(totalwrite, UFSHCD_HEALTH_WRITE_OFFSET, 4);
 
 static struct attribute *ufshcd_health_attrs[] = {
 	&ufs_health_length.attr.attr,
 	&ufs_health_type.attr.attr,
-	&ufs_health_eol.attr.attr,
-	&ufs_health_lifetimeA.attr.attr,
-	&ufs_health_lifetimeB.attr.attr,
-	&ufs_health_lifetimeC.attr.attr,
+	&ufs_health_eol_info.attr.attr,
+	&ufs_health_life_time_estimation_a.attr.attr,
+	&ufs_health_life_time_estimation_b.attr.attr,
+	&ufs_health_life_time_estimation_c.attr.attr,
 	&ufs_health_erasecount.attr.attr,
 	&ufs_health_totalwrite.attr.attr,
 	NULL
 };
 
 static const struct attribute_group ufshcd_health_attr_group = {
-	.name = "health",
+	.name = "health_descriptor",
 	.attrs = ufshcd_health_attrs,
 };
 
