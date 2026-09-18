@@ -44,7 +44,6 @@
 				__func__, ##__VA_ARGS__);	\
 	} while (0)
 
-
 static bool off_charge_flag;
 static void smblib_wireless_set_enable(struct smb_charger *chg, int enable);
 
@@ -445,7 +444,7 @@ int smblib_set_charge_param(struct smb_charger *chg,
 		if (rc < 0)
 			return -EINVAL;
 	} else {
-		if (val_u > param->max_u || val_u < param->min_u) {
+		if (val_u < param->min_u) {
 			smblib_err(chg, "%s: %d is out of range [%d, %d]\n",
 				param->name, val_u, param->min_u, param->max_u);
 			return -EINVAL;
@@ -1183,6 +1182,9 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 	bool override;
 	union power_supply_propval val = {0, };
 	int usb_present = 0;
+
+    /* limit icl_ua to usb_icl.max_u */
+    icl_ua = min(icl_ua, chg->param.usb_icl.max_u);
 
 	pr_info("%s: set icl %d\n", __func__, icl_ua);
 
