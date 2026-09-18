@@ -376,8 +376,8 @@
 	qcom,slope-limit-coeffs = <10 11 12 13>;
 };
 
-&smb1355_charger_0 {
-	status = "ok";
+&smb1355_0 {
+	status = "disabled";
 };
 
 &smb1355_charger_1 {
