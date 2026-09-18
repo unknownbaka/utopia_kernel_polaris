@@ -3418,7 +3418,7 @@ int smblib_get_prop_die_health(struct smb_charger *chg,
 #define HVDCP3_CURRENT_UA		2750000
 #define TYPEC_DEFAULT_CURRENT_UA	900000
 #define TYPEC_MEDIUM_CURRENT_UA		1500000
-#define TYPEC_HIGH_CURRENT_UA		3000000
+#define TYPEC_HIGH_CURRENT_UA		3300000
 static int get_rp_based_dcp_current(struct smb_charger *chg, int typec_mode)
 {
 	int rp_ua;
@@ -3446,8 +3446,9 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 {
 	int rc;
 
+	/* limit val->intval to TYPEC_HIGH_CURRENT_UA */
 	if (chg->pd_active)
-		rc = vote(chg->usb_icl_votable, PD_VOTER, true, val->intval);
+		rc = vote(chg->usb_icl_votable, PD_VOTER, true, min(val->intval, TYPEC_HIGH_CURRENT_UA));
 	else
 		rc = -EPERM;
 
