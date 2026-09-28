@@ -542,7 +542,7 @@ CONFIG_TRACE_RECORD_FEATURE := y
 CONFIG_WLAN_DFS_MASTER_ENABLE := y
 
 #Flag to enable nud tracking feature
-CONFIG_WLAN_NUD_TRACKING := y
+CONFIG_WLAN_NUD_TRACKING := n
 
 #Flag to enable/Disable Function call trace
 CONFIG_FUNC_CALL_MAP := n
