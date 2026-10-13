@@ -912,8 +912,13 @@ static int usb_icl_vote_callback(struct votable *votable, void *data,
 	 * Disable parallel for new ICL vote - the call to split_settled will
 	 * ensure that all the input current limit gets assigned to the main
 	 * charger.
+	 *
+	 * Skip AICL probe steps (225mA each): a single AICL round re-runs a
+	 * dozen times, toggling parallel that often is pointless churn and
+	 * causes VBUS transients. client == NULL means full re-election.
 	 */
-	vote(chip->pl_disable_votable, ICL_CHANGE_VOTER, true, 0);
+	if (!client || strcmp(client, "AICL_RERUN_VOTER"))
+		vote(chip->pl_disable_votable, ICL_CHANGE_VOTER, true, 0);
 
 	/*
 	 * if (ICL < 1400)
@@ -1566,6 +1571,7 @@ static void pl_config_init(struct pl_data *chip, int smb_version)
 {
 	switch (smb_version) {
 	case PMI8998_SUBTYPE:
+		break;
 	case PM660_SUBTYPE:
 		chip->wa_flags = AICL_RERUN_WA_BIT;
 		break;

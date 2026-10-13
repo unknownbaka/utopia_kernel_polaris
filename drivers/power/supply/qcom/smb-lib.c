@@ -3444,10 +3444,10 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 	int rc;
 	int icl_ua = val->intval;
 
-	/* Limit the actual maximum current to TYPEC_HIGH_CURRENT_UA */
+	/* Limit the actual maximum current to HVDCP3_CURRENT_UA */
 	chg->pd_max_ua = icl_ua;
-	if (icl_ua > TYPEC_HIGH_CURRENT_UA)
-	    icl_ua = TYPEC_HIGH_CURRENT_UA;
+	if (icl_ua > HVDCP3_CURRENT_UA)
+	    icl_ua = HVDCP3_CURRENT_UA;
 
 	if (chg->pd_active)
 		rc = vote(chg->usb_icl_votable, PD_VOTER, true, icl_ua);
