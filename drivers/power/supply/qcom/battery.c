@@ -513,9 +513,9 @@ static void get_fcc_stepper_params(struct pl_data *chip, int main_fcc_ua,
 }
 
 #define MINIMUM_PARALLEL_FCC_UA		500000
-#define PL_TAPER_WORK_DELAY_MS		500
+#define PL_TAPER_WORK_DELAY_MS		2000
 #define TAPER_RESIDUAL_PCT		90
-#define TAPER_REDUCTION_UA		200000
+#define TAPER_REDUCTION_UA		100000
 static void pl_taper_work(struct work_struct *work)
 {
 	struct pl_data *chip = container_of(work, struct pl_data,
@@ -1437,6 +1437,7 @@ static void handle_settled_icl_change(struct pl_data *chip)
 	}
 }
 
+#define PL_PRE_TAPER_VOLTAGE_UV		4350000
 static void handle_parallel_in_taper(struct pl_data *chip)
 {
 	union power_supply_propval pval = {0, };
@@ -1445,13 +1446,13 @@ static void handle_parallel_in_taper(struct pl_data *chip)
 	if (get_effective_result_locked(chip->pl_disable_votable))
 		return;
 
-	if (!chip->pl_psy)
+	if (!chip->pl_psy || !chip->batt_psy)
 		return;
 
-	rc = power_supply_get_property(chip->pl_psy,
-			       POWER_SUPPLY_PROP_CHARGE_TYPE, &pval);
+	rc = power_supply_get_property(chip->batt_psy,
+			       POWER_SUPPLY_PROP_VOLTAGE_NOW, &pval);
 	if (rc < 0) {
-		pr_err("Couldn't get pl charge type rc=%d\n", rc);
+		pr_err("Couldn't get current batt voltage rc=%d\n", rc);
 		return;
 	}
 
@@ -1459,8 +1460,8 @@ static void handle_parallel_in_taper(struct pl_data *chip)
 	 * if parallel is seen in taper mode ever, that is an anomaly and
 	 * we disable parallel charger
 	 */
-	if (pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER) {
-		vote(chip->pl_disable_votable, PL_TAPER_EARLY_BAD_VOTER,
+	if (pval.intval > PL_PRE_TAPER_VOLTAGE_UV) {
+		vote(chip->pl_disable_votable, TAPER_END_VOTER,
 				true, 0);
 		return;
 	}
