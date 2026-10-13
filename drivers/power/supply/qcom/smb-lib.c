@@ -3442,9 +3442,15 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 				    const union power_supply_propval *val)
 {
 	int rc;
+	int icl_ua = val->intval;
+
+	/* Limit the actual maximum current to TYPEC_HIGH_CURRENT_UA */
+	chg->pd_max_ua = icl_ua;
+	if (icl_ua > TYPEC_HIGH_CURRENT_UA)
+	    icl_ua = TYPEC_HIGH_CURRENT_UA;
 
 	if (chg->pd_active)
-		rc = vote(chg->usb_icl_votable, PD_VOTER, true, val->intval);
+		rc = vote(chg->usb_icl_votable, PD_VOTER, true, icl_ua);
 	else
 		rc = -EPERM;
 
@@ -3680,6 +3686,9 @@ static int __smblib_set_prop_pd_active(struct smb_charger *chg, bool pd_active)
 		if (rc < 0)
 			smblib_err(chg, "Couldn't unvote USB_PSY rc=%d\n", rc);
 	} else {
+		/* Reset pd_max_ua */
+		chg->pd_max_ua = 0;
+
 		rc = smblib_read(chg, APSD_STATUS_REG, &stat);
 		if (rc < 0) {
 			smblib_err(chg, "Couldn't read APSD status rc=%d\n",
@@ -5299,6 +5308,7 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 	}
 
 	/* reset APSD voters */
+	chg->pd_max_ua = 0;
 	vote(chg->apsd_disable_votable, PD_HARD_RESET_VOTER, false, 0);
 	vote(chg->apsd_disable_votable, PD_VOTER, false, 0);
 
