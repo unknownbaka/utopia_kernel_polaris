@@ -1442,7 +1442,7 @@ static void handle_settled_icl_change(struct pl_data *chip)
 	}
 }
 
-#define PL_PRE_TAPER_VOLTAGE_UV		4350000
+#define PL_PARALLEL_DISABLE_SOC_PCT	75
 static void handle_parallel_in_taper(struct pl_data *chip)
 {
 	union power_supply_propval pval = {0, };
@@ -1454,18 +1454,23 @@ static void handle_parallel_in_taper(struct pl_data *chip)
 	if (!chip->pl_psy || !chip->batt_psy)
 		return;
 
+	/*
+	 * Disable the parallel (slave) charger once the battery SOC
+	 * reaches the threshold, i.e. well before the battery enters
+	 * the end-of-charge (trickle/taper) stage. From this point the
+	 * master charger (SMB2) carries the full charge current alone.
+	 * Voting TAPER_END_VOTER (instead of a permanent voter) lets the
+	 * framework clear it on every USB plug-in, so each fresh charge
+	 * cycle still starts with the parallel charger enabled.
+	 */
 	rc = power_supply_get_property(chip->batt_psy,
-			       POWER_SUPPLY_PROP_VOLTAGE_NOW, &pval);
+			POWER_SUPPLY_PROP_CAPACITY, &pval);
 	if (rc < 0) {
-		pr_err("Couldn't get current batt voltage rc=%d\n", rc);
+		pr_err("Couldn't get batt capacity rc=%d\n", rc);
 		return;
 	}
 
-	/*
-	 * if parallel is seen in taper mode ever, that is an anomaly and
-	 * we disable parallel charger
-	 */
-	if (pval.intval > PL_PRE_TAPER_VOLTAGE_UV) {
+	if (pval.intval >= PL_PARALLEL_DISABLE_SOC_PCT) {
 		vote(chip->pl_disable_votable, TAPER_END_VOTER,
 				true, 0);
 		return;
