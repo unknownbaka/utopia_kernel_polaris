@@ -1465,6 +1465,7 @@ static void handle_parallel_in_taper(struct pl_data *chip)
 	 */
 	rc = power_supply_get_property(chip->batt_psy,
 			POWER_SUPPLY_PROP_CAPACITY, &pval);
+	pr_err("unknownbaka batt capacity rc=%d\n", rc);
 	if (rc < 0) {
 		pr_err("Couldn't get batt capacity rc=%d\n", rc);
 		return;
