@@ -445,9 +445,9 @@ int smblib_set_charge_param(struct smb_charger *chg,
 		if (rc < 0)
 			return -EINVAL;
 	} else {
-		if (val_u > param->max_u || val_u < param->min_u) {
-			smblib_err(chg, "%s: %d is out of range [%d, %d]\n",
-				param->name, val_u, param->min_u, param->max_u);
+		if (val_u < param->min_u) {
+			smblib_err(chg, "%s: %d is less than %d\n",
+				param->name, val_u, param->min_u);
 			return -EINVAL;
 		}
 
