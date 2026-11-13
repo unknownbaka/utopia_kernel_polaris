@@ -695,10 +695,34 @@ static inline void pd_reset_protocol(struct usbpd *pd)
 	pd->send_dr_swap = false;
 }
 
+/*
+ * pd_phy_write() returns -EBUSY whenever an RX message is still pending
+ * acknowledgement in the PD PHY (USB_PDPHY_RX_ACKNOWLEDGE).  With a high
+ * PDO re-select rate (PPS keep-alive / vendor charging HAL) that is a
+ * normal, transient condition: the pending RX is consumed within a few
+ * milliseconds.  The stock code lets one dropped Request escalate into
+ * Soft_Reset -> Hard_Reset -> PD_CURRENT_MAX=0 -> ICL=0, i.e. a full
+ * charge disconnect ("Error sending Request: -16" immediately followed
+ * by "PD_VOTER: val: 0" in the kernel log).
+ *
+ * Retry transient -EBUSY here instead of failing the state machine.
+ * The knobs are runtime-tunable for A/B testing without a rebuild.
+ */
+static unsigned int pd_tx_busy_retry = 8;
+module_param(pd_tx_busy_retry, uint, 0644);
+MODULE_PARM_DESC(pd_tx_busy_retry,
+	"Retries on transient -EBUSY PD TX failures (default 8, 0 disables)");
+
+static unsigned int pd_tx_busy_retry_ms = 5;
+module_param(pd_tx_busy_retry_ms, uint, 0644);
+MODULE_PARM_DESC(pd_tx_busy_retry_ms,
+	"Delay in ms between -EBUSY TX retries (default 5)");
+
 static int pd_send_msg(struct usbpd *pd, u8 msg_type, const u32 *data,
 		size_t num_data, enum pd_sop_type sop)
 {
 	int ret;
+	unsigned int retry;
 	u16 hdr;
 
 	if (pd->hard_reset_recvd)
@@ -707,7 +731,14 @@ static int pd_send_msg(struct usbpd *pd, u8 msg_type, const u32 *data,
 	hdr = PD_MSG_HDR(msg_type, pd->current_dr, pd->current_pr,
 			pd->tx_msgid, num_data, pd->spec_rev);
 
-	ret = pd_phy_write(hdr, (u8 *)data, num_data * sizeof(u32), sop);
+	for (retry = 0; ; retry++) {
+		ret = pd_phy_write(hdr, (u8 *)data, num_data * sizeof(u32), sop);
+		if (ret != -EBUSY || pd->hard_reset_recvd ||
+				retry >= pd_tx_busy_retry)
+			break;
+		usleep_range(pd_tx_busy_retry_ms * 1000,
+				(pd_tx_busy_retry_ms + 2) * 1000);
+	}
 	if (ret) {
 		usbpd_err(&pd->dev, "Error sending %s: %d\n",
 				msg_to_string(msg_type, num_data, false),
@@ -3683,6 +3714,19 @@ static ssize_t pdo_n_show(struct device *dev, struct device_attribute *attr,
 	return -EINVAL;
 }
 
+/*
+ * The vendor charging HAL periodically re-writes the "select_pdo" sysfs
+ * node with the PDO that is already in effect.  Every such write forces a
+ * fresh Request on the CC line; on a busy PHY that is exactly what
+ * triggers the -EBUSY -> Soft_Reset disconnect cycle.  Skip no-op
+ * re-requests of an unchanged FIXED PDO.  APDO/PPS requests are NOT
+ * filtered: PPS needs its periodic Request to stay alive.
+ */
+static bool ignore_redundant_pdo_request = true;
+module_param(ignore_redundant_pdo_request, bool, 0644);
+MODULE_PARM_DESC(ignore_redundant_pdo_request,
+	"Ignore select_pdo re-requests of the current FIXED PDO (default Y)");
+
 static ssize_t select_pdo_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
@@ -3690,6 +3734,8 @@ static ssize_t select_pdo_store(struct device *dev,
 	int src_cap_id;
 	int pdo, uv = 0, ua = 0;
 	int ret;
+	u32 old_rdo;
+	int old_uv, old_ua;
 
 	mutex_lock(&pd->swap_lock);
 
@@ -3720,9 +3766,25 @@ static ssize_t select_pdo_store(struct device *dev,
 		goto out;
 	}
 
+	old_rdo = pd->rdo;
+	old_uv = pd->requested_voltage;
+	old_ua = pd->requested_current;
 	ret = pd_select_pdo(pd, pdo, uv, ua);
 	if (ret)
 		goto out;
+
+	/* no-op re-negotiation: keep the existing explicit contract */
+	if (ignore_redundant_pdo_request && pd->in_explicit_contract &&
+	    (PD_SRC_PDO_TYPE(pd->received_pdos[pdo - 1]) ==
+					PD_SRC_PDO_TYPE_FIXED) &&
+	    pd->rdo == old_rdo && pd->requested_voltage == old_uv &&
+	    pd->requested_current == old_ua &&
+	    pd->requested_pdo == pd->selected_pdo) {
+		usbpd_info(&pd->dev,
+			"select_pdo: redundant PDO %d request ignored\n", pdo);
+		ret = 0;
+		goto out;
+	}
 
 	reinit_completion(&pd->is_ready);
 	pd->send_request = true;
