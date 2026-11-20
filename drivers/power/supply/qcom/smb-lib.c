@@ -3444,7 +3444,7 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 	int rc;
 
 	if (chg->pd_active)
-		rc = vote(chg->usb_icl_votable, PD_VOTER, true, val->intval);
+		rc = vote(chg->usb_icl_votable, PD_VOTER, true, max(val->intval, USBIN_500MA));
 	else
 		rc = -EPERM;
 
